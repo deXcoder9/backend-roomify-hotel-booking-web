@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require("express");
 const cors = require("cors")
 require('dotenv').config()
@@ -12,7 +12,6 @@ app.use(express.json())
 
 
 
-console.log(process.env.DB_user, process.env.DB_pass)
 
 
 const uri = `mongodb+srv://${process.env.DB_user}:${process.env.DB_pass}@cluster0.wvuyzyg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -50,13 +49,42 @@ async function run() {
 
     // getting all booking rooms in the server side
     app.get('/bookings', async (req, res) => {
-      console.log(req.query.email);
+      // console.log(req.query.email);
       let query = {};
       if (req.query?.email) {
           query = { email: req.query.email }
       }
       const result = await bookedRoomsCollection.find(query).toArray();
       res.send(result);
+  })
+
+  // delete a booked room
+  app.delete('/bookings/:id', async(req, res) =>{
+    const id = req.params.id
+    const result = await bookedRoomsCollection.deleteOne({_id: new ObjectId(id)})
+    res.send(result)
+  })
+
+  // app.get('/bookings/:id', async(req, res) =>{
+  //   const id = req.params.id;
+  //   const query = {_id : new ObjectId(id)}
+  //   const result = await bookedRoomsCollection.findOne(query)
+  //   res.send(result)
+  // })
+  
+  // update the date of the booked room
+  app.patch('/bookings/:id', async(req, res) =>{
+    const id = req.params.id;
+    const filter = {_id : new ObjectId(id)}
+    // console.log(id)
+    const updateBookingRoom = req.body;
+    const bookedRoom = {
+      $set: {
+        bookedRoomDate : updateBookingRoom.bookedRoomDate
+      }
+    }
+    const result = await bookedRoomsCollection.updateOne(filter, bookedRoom)
+    res.send(result)
   })
 
     // Send a ping to confirm a successful connection
