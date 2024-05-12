@@ -32,6 +32,7 @@ async function run() {
     await client.connect();
 
     const roomsCollection = client.db('Roomify').collection('rooms')
+    const bookedRoomsCollection = client.db('Roomify').collection('bookedRooms')
 
     // getting all rooms from mongoDB
     app.get('/rooms', async(req, res) =>{
@@ -40,6 +41,23 @@ async function run() {
       res.send(results)
     })
 
+    // posting booked rooms
+    app.post('/bookings', async(req, res) =>{
+      const bookingRoom = req.body
+      const result = await bookedRoomsCollection.insertOne(bookingRoom)
+      res.send(result)
+    })
+
+    // getting all booking rooms in the server side
+    app.get('/bookings', async (req, res) => {
+      console.log(req.query.email);
+      let query = {};
+      if (req.query?.email) {
+          query = { email: req.query.email }
+      }
+      const result = await bookedRoomsCollection.find(query).toArray();
+      res.send(result);
+  })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
