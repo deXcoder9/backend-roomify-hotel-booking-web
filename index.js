@@ -1,14 +1,22 @@
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require("express");
 const cors = require("cors")
+var cookieParser = require('cookie-parser')
+var jwt = require('jsonwebtoken');
 require('dotenv').config()
 const app = express()
 const port = process.env.PORT || 5000;
 
 
 // middleware
-app.use(cors())
-app.use(express.json())
+app.use(cors({
+  origin: [
+      'http://localhost:5173'
+  ],
+  credentials: true
+}));
+app.use(express.json());
+app.use(cookieParser())
 
 
 
@@ -25,6 +33,26 @@ const client = new MongoClient(uri, {
   }
 });
 
+// middlewares
+const logger = (req, res, next) =>{
+  console.log('log: info', req.method, req.url);
+  next();
+}
+const verifyToken = (req, res, next) => {
+  const token = req?.cookies?.accessToken;
+  if(!token){
+      return res.status(401).send({message: 'unauthorized access'})
+  }
+  jwt.verify(token,  process.env.ACCESS__Token , function(err, decoded) {
+      if(err){
+          return res.send({mesage: 'unauthorizwed access'}).status(401)
+      }
+      req.user = decoded;
+      next();
+    });
+}
+
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -34,6 +62,32 @@ async function run() {
     const featuredRoomsCollection = client.db('Roomify').collection('featuredRooms')
     const bookedRoomsCollection = client.db('Roomify').collection('bookedRooms')
     const userReviewsCollection = client.db('Roomify').collection('usersReview')
+
+
+     // auth related api
+     app.post('/jwt',  async(req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS__Token , {expiresIn: '1h'})
+      res
+      .cookie('accessToken', token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'strict'
+      })
+      .send({status: 'success'})
+
+  })
+  app.post('/logout', async(req, res) => {
+      const user = req.body;
+      console.log('logging out user:-' , user)
+      res
+      .clearCookie('accessToken', {maxAge: 0} )
+      .send({status: 'success'})
+      
+
+})
+
+
 
     // getting all rooms from mongoDB
     app.get('/rooms', async(req, res) =>{
