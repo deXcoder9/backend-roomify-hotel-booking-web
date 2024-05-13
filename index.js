@@ -95,13 +95,19 @@ async function run() {
       const result = await userReviewsCollection.insertOne(review)
       res.send(result)
     })
+// getting all users review form mongoDb
+    app.get('/usersreview', async(req, res) =>{
+      const cursor = userReviewsCollection.find()
+      const results = await cursor.toArray()
+      res.send(results)
+    })
 
- // getting all rooms from mongoDB
-//  app.get('/featuredrooms', async(req, res) =>{
-//   const cursor = featuredRoomsCollection.find()
-//   const results = await cursor.toArray()
-//   res.send(results)
-// })
+//  getting all rooms from mongoDB
+ app.get('/featuredrooms', async(req, res) =>{
+  const cursor = featuredRoomsCollection.find()
+  const results = await cursor.toArray()
+  res.send(results)
+})
 
 
     // Send a ping to confirm a successful connection
