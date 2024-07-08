@@ -11,7 +11,8 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(cors({
   origin: [
-      'http://localhost:5173'
+      'http://localhost:5173',
+      'https://roomify-dexcoder.netlify.app'
   ],
   credentials: true
 }));
@@ -51,12 +52,16 @@ const verifyToken = (req, res, next) => {
       next();
     });
 }
-
+const cookiesSettings = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+}
 
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const roomsCollection = client.db('Roomify').collection('rooms')
     const featuredRoomsCollection = client.db('Roomify').collection('featuredRooms')
@@ -65,15 +70,11 @@ async function run() {
 
 
      // auth related api
-     app.post('/jwt',  async(req, res) => {
+     app.post('/jwt', async(req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS__Token , {expiresIn: '1h'})
       res
-      .cookie('accessToken', token, {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'strict'
-      })
+      .cookie('accessToken', token, cookiesSettings)
       .send({status: 'success'})
 
   })
@@ -81,7 +82,7 @@ async function run() {
       const user = req.body;
       console.log('logging out user:-' , user)
       res
-      .clearCookie('accessToken', {maxAge: 0} )
+      .clearCookie('accessToken', { ...cookiesSettings, maxAge : 0} )
       .send({status: 'success'})
       
 
@@ -183,7 +184,7 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
   } finally {
